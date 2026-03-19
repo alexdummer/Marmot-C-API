@@ -112,8 +112,8 @@ int main()
   /* 6. Initialization & Conditions */
   MarmotElement_initializeYourself( el );
 
-  double dummyConditions[6] = { 0.0 };
-  MarmotElement_setInitialConditions( el, MARMOT_ELEMENT_STATE_SIGMA11, dummyConditions );
+  double dummyConditions[1] = { 0.0 };
+  MarmotElement_setInitialConditions( el, 0, dummyConditions );
   printf( "Initialization successful.\n" );
 
   /* 7. Computation Methods */

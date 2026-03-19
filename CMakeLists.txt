@@ -15,6 +15,10 @@ if(MARMOT_INCLUDE_DIR STREQUAL "" OR MARMOT_LIB_DIR STREQUAL "")
     message(FATAL_ERROR "Both MARMOT_INCLUDE_DIR and MARMOT_LIB_DIR must be set per hand. Please configure them.")
 endif()
 
+if(MSVC)
+    target_compile_definitions(marmot_c_api PRIVATE _CRT_SECURE_NO_WARNINGS)
+endif()
+
 # Add include directories for the C API
 target_include_directories(marmot_c_api PUBLIC include)
 

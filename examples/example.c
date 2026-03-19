@@ -51,10 +51,10 @@ int main()
 
   /* 3. Assign Materials and Properties (MUST be done before requesting
    * StateVars count or initializing) */
-  int matCode = MarmotMaterialFactory_getMaterialCodeFromName( "LINEARELASTIC" );
+  int    matCode               = MarmotMaterialFactory_getMaterialCodeFromName( "LINEARELASTIC" );
+  double linearElasticProps[3] = { 1000.0, 0.3, 1 }; /* E, nu, density */
   if ( matCode >= 0 ) {
-    double linearElasticProps[2] = { 1000.0, 0.0 }; /* E, nu */
-    MarmotElement_assignMaterialSection( el, matCode, linearElasticProps, 2 );
+    MarmotElement_assignMaterialSection( el, matCode, linearElasticProps, 3 );
   }
   else {
     printf( "Material 'LINEARELASTIC' not registered via factory, passing "
@@ -112,10 +112,6 @@ int main()
   /* 6. Initialization & Conditions */
   MarmotElement_initializeYourself( el );
 
-  double dummyConditions[1] = { 0.0 };
-  MarmotElement_setInitialConditions( el, 0, dummyConditions );
-  printf( "Initialization successful.\n" );
-
   /* 7. Computation Methods */
   /* Allocating appropriately sized memory structures based on DOF size */
   double* QTotal = (double*)calloc( dofs > 0 ? dofs : 1, sizeof( double ) );
@@ -123,50 +119,73 @@ int main()
   double* Pint   = (double*)calloc( dofs > 0 ? dofs : 1, sizeof( double ) );
   double* Pext   = (double*)calloc( dofs > 0 ? dofs : 1, sizeof( double ) );
   double* K      = (double*)calloc( dofs * dofs > 0 ? dofs * dofs : 1, sizeof( double ) );
-  double* M      = (double*)calloc( dofs * dofs > 0 ? dofs * dofs : 1, sizeof( double ) );
 
-  double time = 0.0, dT = 1.0, pNewdT = 1e12;
+  double time[2] = { 0.0, 0.0 };
+  double dT      = 1.0;
+  double pNewdT  = 1e12;
 
   dQ[1] = 0.1;
   dQ[3] = 0.1;
-  /* Execute a computation step */
-  MarmotElement_computeYourself( el, QTotal, dQ, Pint, K, &time, dT, &pNewdT );
 
+  QTotal[1] = 0.1;
+  QTotal[3] = 0.1;
+
+  /* Execute a computation step */
+  MarmotElement_computeYourself( el, QTotal, dQ, Pint, K, &time[0], dT, &pNewdT );
+
+  printf( "Internal Forces:\n" );
   for ( int i = 0; i < dofs; i++ ) {
-    printf( "Internal Force: %f\n", Pint[i] );
+    printf( "   [%d] = %f\n", i, Pint[i] );
   }
+  printf( "Tangent Stiffness:\n" );
   for ( int i = 0; i < dofs * dofs; i++ ) {
-    printf( "Tangent Stiffness: %f\n", K[i] );
+    printf( "   [%d][%d] = %f\n", i / dofs, i % dofs, K[i] );
   }
 
   /* Extrapolate Loads */
-  double load[3] = { 1.0 };
-  MarmotElement_computeDistributedLoad( el, MARMOT_ELEMENT_LOAD_PRESSURE, Pext, K, 1, load, QTotal, &time, dT );
+  double load[3] = { 1.0, 0.0, 0.0 };
+  MarmotElement_computeDistributedLoad( el, MARMOT_ELEMENT_LOAD_PRESSURE, Pext, K, 1, load, QTotal, &time[0], dT );
 
   printf( "Distributed Load:\n" );
   for ( int i = 0; i < dofs; i++ ) {
-    printf( "    External Force: %f\n", Pext[i] );
+    printf( "   [%d] = %f\n", i, Pext[i] );
   }
 
   double bodyForce[3] = { 1.0 };
-  MarmotElement_computeBodyForce( el, Pext, K, bodyForce, QTotal, &time, dT );
+  MarmotElement_computeBodyForce( el, Pext, K, bodyForce, QTotal, &time[0], dT );
 
   printf( "Body Force:\n" );
   for ( int i = 0; i < dofs; i++ ) {
-    printf( "    External Force: %f\n", Pext[i] );
+    printf( "   [%d] = %f\n", i, Pext[i] );
   }
 
   /* Inertia Extrapolations */
-  MarmotElement_computeLumpedInertia( el, M );
-  MarmotElement_computeConsistentInertia( el, M );
+  double* LMM = (double*)calloc( dofs > 0 ? dofs : 1, sizeof( double ) );
+  double* CMM = (double*)calloc( dofs * dofs > 0 ? dofs * dofs : 1, sizeof( double ) );
+  MarmotElement_computeLumpedInertia( el, LMM );
+
+  printf( "Lumped Inertia:\n" );
+  for ( int i = 0; i < dofs; i++ ) {
+    printf( "   [%d] = %f\n", i, LMM[i] );
+  }
+
+  MarmotElement_computeConsistentInertia( el, CMM );
+
+  printf( "Consistent Inertia:\n" );
+  for ( int i = 0; i < dofs * dofs; i++ ) {
+    printf( "   [%d][%d] = %f\n", i / dofs, i % dofs, CMM[i] );
+  }
 
   printf( "Computation tests completed.\n" );
 
   /* 8. State View */
   if ( qpoints > 0 ) {
-    MarmotElement_StateView_t view = MarmotElement_getStateView( el, "Sigma11", 0 );
+    MarmotElement_StateView_t view = MarmotElement_getStateView( el, "stress", 0 );
     if ( view.stateLocation ) {
-      printf( "StateView 'Sigma11' retrieved successfully, pointer located.\n" );
+      printf( "StateView 'stress' retrieved successfully, pointer located.\n" );
+    }
+    else {
+      printf( "StateView 'stress' not found.\n" );
     }
   }
 
@@ -178,7 +197,8 @@ int main()
   free( Pint );
   free( Pext );
   free( K );
-  free( M );
+  free( CMM );
+  free( LMM );
 
   MarmotElement_destroy( el );
   printf( "Element cleanly destroyed.\n" );

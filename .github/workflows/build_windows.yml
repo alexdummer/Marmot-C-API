@@ -1,0 +1,78 @@
+name: build_windows
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+    steps:
+    - name: Check out Marmot-C-API
+      uses: actions/checkout@v4
+      with:
+        path: Marmot-C-API
+
+    - name: Check out Marmot
+      uses: actions/checkout@v4
+      with:
+        repository: matthiasneuner/Marmot
+        ref: matthias/windows_compilation
+        path: Marmot
+
+    # --- 1. Setup Eigen (Download AND Install to generate Config files) ---
+    - name: Install Eigen
+      shell: powershell
+      run: |
+        Invoke-WebRequest -Uri "https://gitlab.com/libeigen/eigen/-/archive/3.4.1/eigen-3.4.1.zip" -OutFile "eigen.zip"
+        Expand-Archive eigen.zip -DestinationPath .
+        Rename-Item -Path "eigen-3.4.1" -NewName "eigen3"
+        cmake -S eigen3 -B eigen-build -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/eigen-install
+        cmake --build eigen-build --target install
+
+    # --- 2. Setup Other Header-Only Libs ---
+    - name: Download Autodiff 1.1.2
+      shell: powershell
+      run: |
+        Invoke-WebRequest -Uri "https://github.com/autodiff/autodiff/archive/refs/tags/v1.1.2.zip" -OutFile "autodiff.zip"
+        Expand-Archive autodiff.zip -DestinationPath .
+        Rename-Item -Path "autodiff-1.1.2" -NewName "autodiff"
+
+    - name: Download Fastor
+      shell: powershell
+      run: |
+        Invoke-WebRequest -Uri "https://github.com/romeric/Fastor/archive/refs/heads/master.zip" -OutFile "fastor.zip"
+        Expand-Archive fastor.zip -DestinationPath .
+        Rename-Item -Path "Fastor-master" -NewName "fastor"
+
+    # --- 3. Configure and Install Marmot ---
+    - name: Configure and Build Marmot
+      shell: powershell
+      run: |
+        cd Marmot
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{ github.workspace }}/eigen-install" -DAUTODIFF_INCLUDE_DIR="${{ github.workspace }}/autodiff" -DFASTOR_INCLUDE_DIR="${{ github.workspace }}/fastor" -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/marmot-install"
+        cmake --build build --config Release --target install
+
+    # --- 4. Build Marmot-C-API ---
+    - name: Configure Marmot-C-API
+      shell: powershell
+      run: |
+        cd Marmot-C-API
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DMARMOT_INCLUDE_DIR="${{ github.workspace }}/marmot-install/include" -DMARMOT_LIB_DIR="${{ github.workspace }}/marmot-install/lib"
+
+    - name: Build Marmot-C-API
+      shell: powershell
+      run: |
+        cd Marmot-C-API
+        cmake --build build --config Release
+
+    - name: Run C Example
+      shell: powershell
+      run: |
+        # Move the DLL so the executable can locate it at runtime
+        Copy-Item -Path "${{ github.workspace }}/marmot-install/bin/*.dll" -Destination "Marmot-C-API/build" -ErrorAction SilentlyContinue
+        Copy-Item -Path "${{ github.workspace }}/marmot-install/bin/*.dll" -Destination "Marmot-C-API/build/Release" -ErrorAction SilentlyContinue
+        cd Marmot-C-API/build/Release
+        ./example_c.exe

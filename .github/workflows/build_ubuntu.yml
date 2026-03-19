@@ -1,0 +1,83 @@
+name: build_ubuntu
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      CC:   gcc-14
+      CXX:  g++-14
+    steps:
+      - name: Check out Marmot-C-API
+        uses: actions/checkout@v4
+        with:
+          path: Marmot-C-API
+
+      - name: Install Eigen
+        shell: bash -l {0}
+        run: |
+          git clone --branch 3.4.0 https://gitlab.com/libeigen/eigen.git
+          cd eigen
+          mkdir build
+          cd build
+          cmake -DBUILD_TESTING=OFF  ..
+          sudo make install
+          cd ../..
+
+      - name: Install Autodiff
+        shell: bash -l {0}
+        run: |
+          git clone --branch v1.1.0 https://github.com/autodiff/autodiff.git
+          cd autodiff
+          mkdir build
+          cd build
+          cmake -DAUTODIFF_BUILD_TESTS=OFF -DAUTODIFF_BUILD_PYTHON=OFF -DAUTODIFF_BUILD_EXAMPLES=OFF -DAUTODIFF_BUILD_DOCS=OFF ..
+          sudo make install
+          cd ../..
+
+      - name: Install Fastor
+        shell: bash -l {0}
+        run: |
+          git clone --branch V0.6.4 https://github.com/romeric/Fastor.git
+          cd Fastor
+          mkdir build
+          cd build
+          cmake -DBUILD_TESTING=OFF  ..
+          sudo make install
+          cd ../..
+
+      - name: Check out Marmot
+        uses: actions/checkout@v4
+        with:
+          repository: matthiasneuner/Marmot
+          ref: matthias/windows_compilation
+          path: Marmot
+
+      - name: Install Marmot
+        shell: bash -l {0}
+        run: |
+          cd Marmot
+          mkdir build
+          cd build
+          cmake ..
+          sudo make install
+
+      - name: Build Marmot-C-API
+        shell: bash -l {0}
+        run: |
+          cd Marmot-C-API
+          mkdir build
+          cd build
+          cmake -DMARMOT_INCLUDE_DIR=/usr/local/include -DMARMOT_LIB_DIR=/usr/local/lib ..
+          make
+
+      - name: Run C Example
+        shell: bash -l {0}
+        run: |
+          cd Marmot-C-API/build
+          LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH ./example_c

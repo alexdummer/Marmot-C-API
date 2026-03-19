@@ -8,15 +8,15 @@ extern "C" {
 #endif
 
 /* Shared Library Export Macro for Windows MSVC Support */
-#if defined(_WIN32) || defined(_WIN64)
-#  if defined(marmot_c_api_EXPORTS)
-#    define MARMOT_C_API_EXPORT __declspec(dllexport)
+#if defined( _WIN32 ) || defined( _WIN64 )
+#  if defined( marmot_c_api_EXPORTS )
+#    define MARMOT_C_API_EXPORT __declspec( dllexport )
 #  else
-#    define MARMOT_C_API_EXPORT __declspec(dllimport)
+#    define MARMOT_C_API_EXPORT __declspec( dllimport )
 #  endif
 #else
-#  if defined(__GNUC__) || defined(__clang__)
-#    define MARMOT_C_API_EXPORT __attribute__((visibility("default")))
+#  if defined( __GNUC__ ) || defined( __clang__ )
+#    define MARMOT_C_API_EXPORT __attribute__( ( visibility( "default" ) ) )
 #  else
 #    define MARMOT_C_API_EXPORT
 #  endif
@@ -109,10 +109,10 @@ MARMOT_C_API_EXPORT int MarmotElement_getNodeFieldsCount( MarmotElement_t elemen
  * @param bufferSize Size of outBuffer.
  */
 MARMOT_C_API_EXPORT void MarmotElement_getNodeFieldName( MarmotElement_t element,
-                                     int             nodeIndex,
-                                     int             fieldIndex,
-                                     char*           outBuffer,
-                                     int             bufferSize );
+                                                         int             nodeIndex,
+                                                         int             fieldIndex,
+                                                         char*           outBuffer,
+                                                         int             bufferSize );
 
 /**
  * @brief Get permutation pattern for degrees of freedom.
@@ -121,9 +121,9 @@ MARMOT_C_API_EXPORT void MarmotElement_getNodeFieldName( MarmotElement_t element
  * @param actualSize Populated with the actual number of indices (can be NULL).
  */
 MARMOT_C_API_EXPORT void MarmotElement_getDofIndicesPermutationPattern( MarmotElement_t element,
-                                                    int*            outArray,
-                                                    int             maxSize,
-                                                    int*            actualSize );
+                                                                        int*            outArray,
+                                                                        int             maxSize,
+                                                                        int*            actualSize );
 
 MARMOT_C_API_EXPORT int MarmotElement_getNSpatialDimensions( MarmotElement_t element );
 
@@ -142,51 +142,51 @@ MARMOT_C_API_EXPORT void MarmotElement_assignStateVars( MarmotElement_t element,
  * @brief Assign element property (wrapper for assignProperty(const ElementProperties&)).
  */
 MARMOT_C_API_EXPORT void MarmotElement_assignElementProperty( MarmotElement_t element,
-                                          const double*   elementProperties,
-                                          int             nElementProperties );
+                                                              const double*   elementProperties,
+                                                              int             nElementProperties );
 
 /**
  * @brief Assign material section property (wrapper for assignProperty(const MarmotMaterialSection&)).
  */
 MARMOT_C_API_EXPORT void MarmotElement_assignMaterialSection( MarmotElement_t element,
-                                          int             materialCode,
-                                          const double*   materialProperties,
-                                          int             nMaterialProperties );
+                                                              int             materialCode,
+                                                              const double*   materialProperties,
+                                                              int             nMaterialProperties );
 
 MARMOT_C_API_EXPORT void MarmotElement_assignNodeCoordinates( MarmotElement_t element, const double* coordinates );
 
 MARMOT_C_API_EXPORT void MarmotElement_initializeYourself( MarmotElement_t element );
 
 MARMOT_C_API_EXPORT void MarmotElement_setInitialConditions( MarmotElement_t            element,
-                                         MarmotElement_StateTypes_t state,
-                                         const double*              values );
+                                                             MarmotElement_StateTypes_t state,
+                                                             const double*              values );
 
 MARMOT_C_API_EXPORT void MarmotElement_computeYourself( MarmotElement_t element,
-                                    const double*   QTotal,
-                                    const double*   dQ,
-                                    double*         Pint,
-                                    double*         K,
-                                    const double*   time,
-                                    double          dT,
-                                    double*         pNewdT );
+                                                        const double*   QTotal,
+                                                        const double*   dQ,
+                                                        double*         Pint,
+                                                        double*         K,
+                                                        const double*   time,
+                                                        double          dT,
+                                                        double*         pNewdT );
 
 MARMOT_C_API_EXPORT void MarmotElement_computeDistributedLoad( MarmotElement_t                      element,
-                                           MarmotElement_DistributedLoadTypes_t loadType,
-                                           double*                              Pext,
-                                           double*                              K,
-                                           int                                  elementFace,
-                                           const double*                        load,
-                                           const double*                        QTotal,
-                                           const double*                        time,
-                                           double                               dT );
+                                                               MarmotElement_DistributedLoadTypes_t loadType,
+                                                               double*                              Pext,
+                                                               double*                              K,
+                                                               int                                  elementFace,
+                                                               const double*                        load,
+                                                               const double*                        QTotal,
+                                                               const double*                        time,
+                                                               double                               dT );
 
 MARMOT_C_API_EXPORT void MarmotElement_computeBodyForce( MarmotElement_t element,
-                                     double*         Pext,
-                                     double*         K,
-                                     const double*   load,
-                                     const double*   QTotal,
-                                     const double*   time,
-                                     double          dT );
+                                                         double*         Pext,
+                                                         double*         K,
+                                                         const double*   load,
+                                                         const double*   QTotal,
+                                                         const double*   time,
+                                                         double          dT );
 
 /**
  * @brief Compute lumped inertia. Return 0 on success, non-zero on error/unimplemented.
@@ -203,8 +203,8 @@ MARMOT_C_API_EXPORT int MarmotElement_computeConsistentInertia( MarmotElement_t 
  * @param stateName Null-terminated string.
  */
 MARMOT_C_API_EXPORT MarmotElement_StateView_t MarmotElement_getStateView( MarmotElement_t element,
-                                                      const char*     stateName,
-                                                      int             quadraturePoint );
+                                                                          const char*     stateName,
+                                                                          int             quadraturePoint );
 
 /**
  * @brief Get coordinates at center.
@@ -212,7 +212,10 @@ MARMOT_C_API_EXPORT MarmotElement_StateView_t MarmotElement_getStateView( Marmot
  * @param maxSize Maximum number of elements in outArray.
  * @param actualSize Number of elements actually written (can be NULL).
  */
-MARMOT_C_API_EXPORT void MarmotElement_getCoordinatesAtCenter( MarmotElement_t element, double* outArray, int maxSize, int* actualSize );
+MARMOT_C_API_EXPORT void MarmotElement_getCoordinatesAtCenter( MarmotElement_t element,
+                                                               double*         outArray,
+                                                               int             maxSize,
+                                                               int*            actualSize );
 
 /**
  * @brief Get the number of quadrature points.
@@ -228,11 +231,11 @@ MARMOT_C_API_EXPORT int MarmotElement_getNumberOfQuadraturePoints( MarmotElement
  * @param actualDim Populated with actual number of dimensions.
  */
 MARMOT_C_API_EXPORT void MarmotElement_getCoordinatesAtQuadraturePoints( MarmotElement_t element,
-                                                     double*         outArray,
-                                                     int             maxPoints,
-                                                     int             maxDim,
-                                                     int*            actualPoints,
-                                                     int*            actualDim );
+                                                                         double*         outArray,
+                                                                         int             maxPoints,
+                                                                         int             maxDim,
+                                                                         int*            actualPoints,
+                                                                         int*            actualDim );
 
 #ifdef __cplusplus
 }
